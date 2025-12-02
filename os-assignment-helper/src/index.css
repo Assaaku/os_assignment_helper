@@ -1,0 +1,110 @@
+/* Tailwind v4 import */
+@import "tailwindcss";
+
+/* ---------- Core vars ---------- */
+:root {
+    color-scheme: light;
+    --card: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.18);
+    --accent: 255 115 179;
+}
+
+/* ---------- App content (non-deck UI) ---------- */
+body { background: #f7f7f8; }
+
+/* ---------- Deck base ---------- */
+.deck { position: fixed; inset: 0; display: grid; place-items: center; }
+.deck .stage {
+    position: relative; width: min(1200px, 92vw); height: min(720px, 92vh);
+    border-radius: 24px; overflow: hidden;
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 20px 80px rgba(0,0,0,.35);
+}
+.deck .bg {
+    position: absolute; inset: 0; pointer-events: none;
+    opacity: .75; filter: saturate(1.1);
+}
+.deck .content {
+    position: absolute; inset: 0; padding: 48px 56px; color: #fff;
+    display: grid; grid-template-rows: auto 1fr auto;
+    gap: 18px;
+}
+.deck .topbar, .deck .bottombar {
+    display:flex; align-items:center; justify-content:space-between; font-size:14px; opacity:.9;
+}
+.deck .slidearea { overflow: hidden; }
+.deck .card {
+    width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;
+    gap: 18px; text-align:left;
+    animation: slideIn .45s ease both;
+}
+.deck .title   { font-weight:800; font-size: clamp(32px,5.5vw,62px); line-height:1.05; text-align:center; }
+.deck .subtitle{ font-size: clamp(18px,2.5vw,28px); opacity:.85; text-align:center;}
+.deck .bullets { font-size: clamp(18px,2.1vw,24px); line-height:1.45; width:min(900px,100%); }
+.deck .bullets li { margin: .35rem 0; }
+.deck .split { display:grid; grid-template-columns: 1fr 1fr; gap:28px; width:100%; }
+.deck .split ul { width:100%; }
+.deck .quote { font-size: clamp(22px,2.6vw,30px); font-style: italic; opacity:.95; border-left:4px solid rgba(255,255,255,.35); padding-left:16px;}
+.deck .code  { width:100%; max-width: min(100%, 900px); background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
+    border-radius:16px; padding:16px 18px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(13px,1.5vw,16px); overflow:auto; }
+.deck .imgwrap { display:flex; justify-content:center; align-items:center; width:100%; }
+.deck img { max-width:100%; max-height: 60vh; border-radius: 16px; border:1px solid var(--glass-border); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+
+/* Progress */
+.deck .progress {
+    position:absolute; left:0; right:0; top:0; height:6px; background: rgba(255,255,255,.18);
+}
+.deck .progress > div {
+    height:100%; background: rgb(var(--accent));
+    background: linear-gradient(90deg, rgba(var(--accent),1) 0%, rgba(56,189,248,1) 100%);
+    transition: width .35s ease;
+}
+
+/* Timer bubble */
+.deck .timer {
+    position:absolute; bottom:18px; right:22px; font-weight:800;
+    font-size: clamp(22px,2.4vw,34px);
+    background: rgba(0,0,0,.35); border:1px solid var(--glass-border);
+    padding:6px 12px; border-radius:14px;
+}
+
+/* Help overlay */
+.deck .help {
+    position:absolute; inset:0; background:rgba(0,0,0,.6); display:grid; place-items:center; color:#fff;
+}
+.deck .help .box {
+    background: rgba(0,0,0,.45); border:1px solid var(--glass-border); border-radius:16px; padding:20px 22px; width:min(720px,92vw);
+}
+
+/* Blackout */
+.deck .blackout { position:absolute; inset:0; background:#000; }
+
+/* ---------- Themes ---------- */
+.theme-sunset  { --accent: 255 115 179; }
+.theme-sunset .bg {
+    background:
+            radial-gradient(1200px 600px at 10% 10%, rgba(255,184,108,.45), transparent 60%),
+            radial-gradient(1200px 600px at 90% 90%, rgba(255,115,179,.55), transparent 60%),
+            radial-gradient(800px 800px at 30% 70%, rgba(56,189,248,.35), transparent 60%),
+            linear-gradient(145deg, #0b0b0f 0%, #151219 50%, #1b1320 100%);
+}
+.theme-ocean   { --accent: 56 189 248; }
+.theme-ocean .bg {
+    background:
+            radial-gradient(1000px 600px at 20% 20%, rgba(56,189,248,.55), transparent 60%),
+            radial-gradient(900px 700px at 80% 80%, rgba(34,197,94,.45), transparent 60%),
+            linear-gradient(145deg, #06121a 0%, #0a1620 40%, #041a16 100%);
+}
+.theme-carbon  { --accent: 148 163 184; }
+.theme-carbon .bg {
+    background:
+            radial-gradient(900px 600px at 70% 20%, rgba(148,163,184,.35), transparent 60%),
+            linear-gradient(145deg, #0b0b0b 0%, #121212 50%, #0b0b0b 100%);
+}
+
+/* ---------- Animations ---------- */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
