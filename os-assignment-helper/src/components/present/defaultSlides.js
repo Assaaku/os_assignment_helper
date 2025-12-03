@@ -13,6 +13,7 @@ export const DEFAULT_SLIDES = [
     body:
       "Процесс = ажиллаж буй програмын жишээ; Thread = нэг хаягийн зайд зэрэгцээ гүйцэтгэх урсгал.",
     bullets: ["Isolation • Scheduling • IPC", "Санах ой, файлын систем, I/O"],
+    align: "center",
     image: true,
     imageSide: "right"
   },
@@ -22,6 +23,7 @@ export const DEFAULT_SLIDES = [
     body:
       "Процесс нь OS дээр ажиллаж буй програмын runtime төлөв. Тусдаа хаягийн зай, PID, нөөцтэй.",
     bullets: ["Сегментүүд: Code • Data • Heap • Stack", "OS нь PCB-аар хянадаг"],
+    align: "center",
     image: true,
     imageSide: "left"
   },
@@ -35,6 +37,7 @@ export const DEFAULT_SLIDES = [
     ],
     body:
       "Scheduling ба I/O нь шилжилтийг тодорхойлдог. Context switch нь зардалтай.",
+    align: "center",
     image: false
   },
   {
@@ -43,6 +46,7 @@ export const DEFAULT_SLIDES = [
     body:
       "Нэг процесс доторхи хөнгөн гүйцэтгэх нэгж. Код/өгөгдөл хуваалцсан, стек тусдаа.",
     bullets: ["Давуу: солилцоо хурдан", "Сорилт: race, deadlock → sync шаардлагатай"],
+    align: "center",
     image: true,
     imageSide: "right"
   },
@@ -54,6 +58,7 @@ export const DEFAULT_SLIDES = [
       "Mutex/Semaphore → critical section хамгаалалт"
     ],
     body: "Зөв загварчлалгүй бол deadlock/starvation эрсдэлтэй.",
+    align: "center",
     image: true,
     imageSide: "left"
   },
@@ -66,6 +71,7 @@ export const DEFAULT_SLIDES = [
       "IPC + sync = зөв аюулгүй загвар"
     ],
     body: "Гүйцэтгэл ба найдвартай байдлыг тэнцвэржүүл.",
+    align: "center",
     image: false
   }
 ];

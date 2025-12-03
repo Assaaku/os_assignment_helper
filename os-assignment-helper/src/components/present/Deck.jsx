@@ -113,12 +113,12 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "OS Ass
 
       {/* Stage */}
       <div className="pt-[96px] pb-10">
-        <div className="mx-auto w-[min(88vw,1150px)] h-[78vh] max-h-[720px] flex items-center justify-center">
-          <div className="relative w-full h-full rounded-[22px] overflow-hidden shadow-[0_32px_95px_-42px_rgba(0,0,0,.7)] ring-1 ring-white/10">
+        <div className="mx-auto w-[min(92vw,1220px)] h-[82vh] max-h-[780px] flex items-center justify-center">
+          <div className="relative w-full h-full rounded-[24px] overflow-hidden shadow-[0_32px_95px_-42px_rgba(0,0,0,.7)] ring-1 ring-white/10">
             <div className={`absolute inset-0 bg-gradient-to-br ${colorWash}`} />
             <div className="absolute inset-0 bg-white/12" />
-            <div className="relative w-full h-full flex items-center justify-center p-7 md:p-9">
-              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/70 text-neutral-900">
+            <div className="relative w-full h-full flex items-center justify-center p-8 md:p-10">
+              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/80 text-neutral-900">
                 <SlideView
                   key={idx}
                   slide={slide}
@@ -149,7 +149,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
   const tw = clsx(
     "w-full h-full bg-gradient-to-br",
     themeClass,
-    "p-8 md:p-12 flex items-center justify-center",
+    "p-10 md:p-14 flex items-center justify-center",
     `transition-${transition}` // CSS in deck.css
   );
 
@@ -160,9 +160,9 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
     const textFirst = imageSide === "right";
     return (
       <div className={tw}>
-        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-2 md:px-6">
-          {textFirst ? <SlideText slide={slide} /> : <SlideImage src={assetUrl} />}
-          {textFirst ? <SlideImage src={assetUrl} /> : <SlideText slide={slide} />}
+        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-10 items-center px-4 md:px-8">
+          {textFirst ? <SlideText slide={slide} centered /> : <SlideImage src={assetUrl} />}
+          {textFirst ? <SlideImage src={assetUrl} /> : <SlideText slide={slide} centered />}
         </div>
       </div>
     );
@@ -170,30 +170,31 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
 
   return (
     <div className={tw}>
-      <div className="w-full max-w-4xl mx-auto flex flex-col h-full justify-center text-center">
-        <Header slide={slide} />
-        <Body slide={slide} />
+      <div className="w-full max-w-4xl mx-auto flex flex-col h-full justify-center text-center px-4 md:px-6">
+        <Header slide={slide} centered />
+        <Body slide={slide} centered />
       </div>
     </div>
   );
 }
 
-function Header({ slide }) {
+function Header({ slide, centered }) {
   return (
     <div className="mb-6">
-      {slide?.title && <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center">{slide.title}</h1>}
-      {slide?.subtitle && <h2 className="text-xl md:text-2xl opacity-80 mt-1 text-center">{slide.subtitle}</h2>}
+      {slide?.title && <h1 className={clsx("text-4xl md:text-5xl font-extrabold tracking-tight", centered && "text-center mx-auto max-w-3xl")}>{slide.title}</h1>}
+      {slide?.subtitle && <h2 className={clsx("text-xl md:text-2xl opacity-80 mt-2", centered && "text-center mx-auto max-w-2xl")}>{slide.subtitle}</h2>}
     </div>
   );
 }
 
-function Body({ slide }) {
+function Body({ slide, centered }) {
+  const textAlign = centered || slide?.align === "center" ? "text-center" : "text-left";
   return (
     <div className="flex-1">
-      {slide?.body && <p className="max-w-3xl text-lg leading-relaxed mb-4 mx-auto text-center">{slide.body}</p>}
+      {slide?.body && <p className={clsx("max-w-3xl text-lg leading-relaxed mb-5 mx-auto", textAlign)}>{slide.body}</p>}
       {Array.isArray(slide?.bullets) && slide.bullets.length > 0 && (
-        <ul className="space-y-3 text-lg leading-relaxed list-disc pl-6 text-left max-w-3xl mx-auto">
-          {slide.bullets.map((b, i) => <li key={i}>{b}</li>)}
+        <ul className={clsx("space-y-3 text-lg leading-relaxed list-disc list-inside max-w-3xl mx-auto", textAlign)}>
+          {slide.bullets.map((b, i) => <li key={i} className={textAlign}>{b}</li>)}
         </ul>
       )}
     </div>
@@ -209,11 +210,11 @@ function SlideImage({ src }) {
   );
 }
 
-function SlideText({ slide }) {
+function SlideText({ slide, centered }) {
   return (
-    <div className="flex flex-col px-2 md:px-4 text-center">
-      <Header slide={slide} />
-      <Body slide={slide} />
+    <div className="flex flex-col px-4 md:px-6 text-center">
+      <Header slide={slide} centered={centered} />
+      <Body slide={slide} centered={centered} />
     </div>
   );
 }
