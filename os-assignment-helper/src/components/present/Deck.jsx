@@ -113,12 +113,12 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "OS Ass
 
       {/* Stage */}
       <div className="pt-[96px] pb-10">
-        <div className="mx-auto w-[min(90vw,1100px)] h-[80vh] max-h-[720px] flex items-center justify-center">
-          <div className="relative w-full h-full rounded-[24px] overflow-hidden shadow-[0_30px_90px_-40px_rgba(0,0,0,.6)] ring-1 ring-white/10">
+        <div className="mx-auto w-[min(88vw,1150px)] h-[78vh] max-h-[720px] flex items-center justify-center">
+          <div className="relative w-full h-full rounded-[22px] overflow-hidden shadow-[0_32px_95px_-42px_rgba(0,0,0,.7)] ring-1 ring-white/10">
             <div className={`absolute inset-0 bg-gradient-to-br ${colorWash}`} />
-            <div className="absolute inset-0 bg-white/10" />
-            <div className="relative w-full h-full flex items-center justify-center p-6 md:p-8">
-              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/65 text-neutral-900">
+            <div className="absolute inset-0 bg-white/12" />
+            <div className="relative w-full h-full flex items-center justify-center p-7 md:p-9">
+              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/70 text-neutral-900">
                 <SlideView
                   key={idx}
                   slide={slide}
@@ -149,7 +149,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
   const tw = clsx(
     "w-full h-full bg-gradient-to-br",
     themeClass,
-    "p-8 md:p-10 flex items-center justify-center",
+    "p-8 md:p-12 flex items-center justify-center",
     `transition-${transition}` // CSS in deck.css
   );
 
@@ -160,7 +160,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
     const textFirst = imageSide === "right";
     return (
       <div className={tw}>
-        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-2 md:px-6">
           {textFirst ? <SlideText slide={slide} /> : <SlideImage src={assetUrl} />}
           {textFirst ? <SlideImage src={assetUrl} /> : <SlideText slide={slide} />}
         </div>
@@ -170,7 +170,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
 
   return (
     <div className={tw}>
-      <div className="w-full max-w-5xl mx-auto flex flex-col h-full justify-center">
+      <div className="w-full max-w-4xl mx-auto flex flex-col h-full justify-center text-center">
         <Header slide={slide} />
         <Body slide={slide} />
       </div>
@@ -181,8 +181,8 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
 function Header({ slide }) {
   return (
     <div className="mb-6">
-      {slide?.title && <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{slide.title}</h1>}
-      {slide?.subtitle && <h2 className="text-xl md:text-2xl opacity-80 mt-1">{slide.subtitle}</h2>}
+      {slide?.title && <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center">{slide.title}</h1>}
+      {slide?.subtitle && <h2 className="text-xl md:text-2xl opacity-80 mt-1 text-center">{slide.subtitle}</h2>}
     </div>
   );
 }
@@ -190,20 +190,19 @@ function Header({ slide }) {
 function Body({ slide }) {
   return (
     <div className="flex-1">
-      {slide?.body && <p className="max-w-3xl text-lg leading-relaxed mb-4">{slide.body}</p>}
+      {slide?.body && <p className="max-w-3xl text-lg leading-relaxed mb-4 mx-auto text-center">{slide.body}</p>}
       {Array.isArray(slide?.bullets) && slide.bullets.length > 0 && (
-        <ul className="space-y-3 text-lg leading-relaxed list-disc pl-6">
+        <ul className="space-y-3 text-lg leading-relaxed list-disc pl-6 text-left max-w-3xl mx-auto">
           {slide.bullets.map((b, i) => <li key={i}>{b}</li>)}
         </ul>
       )}
-      <div className="mt-6 h-[2px] w-full bg-black/10" />
     </div>
   );
 }
 
 function SlideImage({ src }) {
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-black/10 shadow-xl">
+    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-black/15 shadow-2xl bg-black/30">
       <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
     </div>
@@ -212,7 +211,7 @@ function SlideImage({ src }) {
 
 function SlideText({ slide }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col px-2 md:px-4 text-center">
       <Header slide={slide} />
       <Body slide={slide} />
     </div>
