@@ -1,19 +1,17 @@
-import React, { useMemo, useRef, useState } from "react";
+// src/App.jsx
+import React, { useMemo, useState } from "react";
 import Deck from "@/components/present/Deck";
 import { DEFAULT_SLIDES } from "@/components/present/defaultSlides";
 
-// Discover all images under /src/assets (Vite)
+// Auto-discover images in /src/assets (Vite)
 const imageModules = import.meta.glob("/src/assets/*.{png,jpg,jpeg,webp,gif,svg}", { eager: true });
-const ASSET_URLS = Object.values(imageModules).map((m) => m.default).filter(Boolean);
+const ASSET_URLS = Object.values(imageModules).map(m => m?.default).filter(Boolean);
 
 export default function App() {
-  // UI mode
   const [presenting, setPresenting] = useState(false);
-  // Editor state (JSON for structured slides)
   const [jsonText, setJsonText] = useState(JSON.stringify(DEFAULT_SLIDES, null, 2));
   const [jsonError, setJsonError] = useState(null);
 
-  // Parse JSON safely
   const slides = useMemo(() => {
     try {
       const parsed = JSON.parse(jsonText);
@@ -21,12 +19,11 @@ export default function App() {
       setJsonError(null);
       return parsed;
     } catch (e) {
-      setJsonError((e && e.message) || "Invalid JSON");
+      setJsonError(e?.message || "Invalid JSON");
       return [];
     }
   }, [jsonText]);
 
-  // Simple header actions
   const start = () => { if (!jsonError && slides.length) setPresenting(true); };
   const stop  = () => setPresenting(false);
 
@@ -35,12 +32,13 @@ export default function App() {
       <Deck
         slides={slides}
         assets={ASSET_URLS}
-        onExit={stop}
         brand="OS Assignment"
+        onExit={stop}
       />
     );
   }
 
+  // Editor screen (no overlap; clean glass UI)
   return (
     <div className="min-h-screen text-neutral-900 bg-[radial-gradient(1200px_600px_at_40%_-10%,#e0f2fe,transparent),radial-gradient(800px_400px_at_90%_10%,#fde68a,transparent)]">
       <div className="mx-auto max-w-6xl p-6 md:p-10">
@@ -57,7 +55,7 @@ export default function App() {
               disabled={!!jsonError || slides.length === 0}
               title={jsonError ? "Fix JSON first" : "Start presentation"}
             >
-              Start ▶
+              Present ▶
             </button>
           </div>
         </header>
@@ -74,10 +72,9 @@ export default function App() {
           </div>
 
           <p className="text-sm opacity-80">
-            Tips: Each slide can set <code>theme</code> (ocean|carbon|sunset|violet|forest) and
-            <code>image</code> (boolean). If <code>image</code> is true, set <code>imageSide</code> to
-            "left" or "right" to place the text on the opposite side. The app will auto-pick a random
-            image from <code>/src/assets</code>.
+            Tip: Each slide can set <code>theme</code> (ocean|carbon|sunset|violet|forest) and
+            <code> image</code> (boolean). If <code>image</code> is true, set <code>imageSide</code> to
+            "left" or "right". The app will auto-pick a random image from <code>/src/assets</code>.
           </p>
 
           <textarea
@@ -114,7 +111,7 @@ export default function App() {
           </div>
 
           <div className="text-xs opacity-70">
-            Place a few images in <code>src/assets/</code> (png/jpg/jpeg/webp/gif/svg). They’ll be discovered automatically.
+            Put a few images in <code>src/assets/</code> — they are detected automatically.
           </div>
         </div>
       </div>

@@ -1,15 +1,17 @@
-// Minimal, structured slide set demonstrating themes and image placement.
-// Fields:
+// src/components/present/defaultSlides.js
+// Structured slide set with themes and optional image placement.
+// Fields per slide:
 // - theme: "ocean" | "carbon" | "sunset" | "violet" | "forest"
-// - image: boolean (if true, app will pick a random image from /src/assets)
-// - imageSide: "left" | "right"
+// - image: boolean (if true, a random asset from /src/assets is shown)
+// - imageSide: "left" | "right" (text goes on the other side)
 
 export const DEFAULT_SLIDES = [
   {
     theme: "sunset",
     title: "Процесс ба Thread",
     subtitle: "Үндсэн ойлголтууд",
-    body: "Процесс = ажиллаж буй програмын жишээ; Thread = нэг хаягийн зайд зэрэгцээ гүйцэтгэх урсгал.",
+    body:
+      "Процесс = ажиллаж буй програмын жишээ; Thread = нэг хаягийн зайд зэрэгцээ гүйцэтгэх урсгал.",
     bullets: ["Isolation • Scheduling • IPC", "Санах ой, файлын систем, I/O"],
     image: true,
     imageSide: "right"
@@ -17,7 +19,8 @@ export const DEFAULT_SLIDES = [
   {
     theme: "ocean",
     title: "Процесс гэж юу вэ?",
-    body: "Процесс нь OS дээр ажиллаж буй програмын runtime төлөв. Тусдаа хаягийн зай, PID, нөөцтэй.",
+    body:
+      "Процесс нь OS дээр ажиллаж буй програмын runtime төлөв. Тусдаа хаягийн зай, PID, нөөцтэй.",
     bullets: ["Сегментүүд: Code • Data • Heap • Stack", "OS нь PCB-аар хянадаг"],
     image: true,
     imageSide: "left"
@@ -30,13 +33,15 @@ export const DEFAULT_SLIDES = [
       "Running → Waiting → Ready",
       "Running → Terminated"
     ],
-    body: "Scheduling ба I/O нь шилжилтийг тодорхойлдог. Context switch нь зардалтай.",
+    body:
+      "Scheduling ба I/O нь шилжилтийг тодорхойлдог. Context switch нь зардалтай.",
     image: false
   },
   {
     theme: "forest",
     title: "Thread гэж юу вэ?",
-    body: "Нэг процесс доторхи хөнгөн гүйцэтгэх нэгж. Код/өгөгдөл хуваалцсан, стек тусдаа.",
+    body:
+      "Нэг процесс доторхи хөнгөн гүйцэтгэх нэгж. Код/өгөгдөл хуваалцсан, стек тусдаа.",
     bullets: ["Давуу: солилцоо хурдан", "Сорилт: race, deadlock → sync шаардлагатай"],
     image: true,
     imageSide: "right"
