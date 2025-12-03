@@ -35,22 +35,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-neutral-900">
-      <div className="mx-auto max-w-6xl p-6 md:p-10 space-y-8">
-        <header className="flex items-center justify-between">
+      <div className="mx-auto max-w-6xl p-6 md:p-10 space-y-8 card-soft">
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">OS Assignment Helper</h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-ink">OS Assignment Helper</h1>
             <p className="text-sm opacity-70">Process &amp; Thread — presentation builder</p>
           </div>
 
-          <div className="inline-flex rounded-lg overflow-hidden border bg-white">
+          <div className="flex gap-2">
             <button
-              className={`px-3 py-2 text-sm ${mode==="structured" ? "bg-neutral-900 text-white" : ""}`}
+              className={`btn ${mode==="structured" ? "btn-primary" : ""}`}
               onClick={() => setMode("structured")}
             >
               Structured (JSON)
             </button>
             <button
-              className={`px-3 py-2 text-sm ${mode==="markdown" ? "bg-neutral-900 text-white" : ""}`}
+              className={`btn ${mode==="markdown" ? "btn-primary" : ""}`}
               onClick={() => setMode("markdown")}
             >
               Markdown
@@ -68,13 +68,13 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-3 py-2 rounded-lg border bg-white text-sm"
+                  className="btn"
                   onClick={() => setJsonText(JSON.stringify(DEFAULT_SLIDES, null, 2))}
                 >
                   Load default slides
                 </button>
                 <button
-                  className="px-3 py-2 rounded-lg border bg-white text-sm"
+                  className="btn"
                   onClick={() => {
                     const blob = new Blob([jsonText], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
@@ -85,7 +85,7 @@ export default function App() {
                 >
                   Export JSON
                 </button>
-                <label className="px-3 py-2 rounded-lg border bg-white text-sm cursor-pointer">
+                <label className="btn cursor-pointer">
                   Import JSON
                   <input
                     type="file"
@@ -104,7 +104,7 @@ export default function App() {
             </div>
 
             <textarea
-              className="w-full h-[520px] rounded-xl border bg-white p-4 font-mono text-sm outline-none focus:ring-2 focus:ring-black/20"
+              className="inp font-mono text-sm h-[520px]"
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
               spellCheck={false}
@@ -117,7 +117,7 @@ export default function App() {
               Use <code>::</code> to split columns. Per-slide tags: <code>[bg=ocean]</code>, <code>[layout=split]</code>, etc.
             </div>
             <textarea
-              className="w-full h-[520px] rounded-xl border bg-white p-4 font-mono text-sm outline-none focus:ring-2 focus:ring-black/20"
+              className="inp font-mono text-sm h-[520px]"
               value={mdText}
               onChange={(e) => setMdText(e.target.value)}
               spellCheck={false}
@@ -139,14 +139,14 @@ export default function App() {
 
         <div className="flex gap-3">
           <button
-            className={`px-4 py-2 rounded-lg text-white ${canStart ? "bg-neutral-900" : "bg-neutral-400 cursor-not-allowed"}`}
+            className={`btn btn-primary ${canStart ? "" : "opacity-60 cursor-not-allowed"}`}
             onClick={start}
             disabled={!canStart}
           >
             Start presentation (F in deck)
           </button>
           <button
-            className="px-4 py-2 rounded-lg border"
+            className="btn"
             onClick={() => setJsonText(JSON.stringify(DEFAULT_SLIDES, null, 2))}
           >
             Reset to default
