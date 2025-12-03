@@ -20,6 +20,19 @@ const THEMES = {
   forest: "from-emerald-50 via-green-50 to-lime-50"
 };
 
+const COLOR_WASHES = [
+  "from-white/70 via-white/60 to-white/40",
+  "from-orange-50/80 via-amber-100/80 to-amber-200/60",
+  "from-sky-50/80 via-cyan-100/70 to-indigo-100/60",
+  "from-rose-50/80 via-pink-100/70 to-fuchsia-100/60",
+  "from-emerald-50/80 via-green-100/70 to-lime-100/60",
+  "from-slate-50/80 via-gray-100/70 to-slate-200/50",
+  "from-purple-50/80 via-violet-100/70 to-indigo-100/60",
+  "from-yellow-50/80 via-orange-100/70 to-amber-100/60",
+  "from-cyan-50/80 via-sky-100/70 to-emerald-100/60",
+  "from-neutral-50/80 via-stone-100/70 to-zinc-100/60"
+];
+
 const TRANSITIONS = ["fade", "slide", "zoom", "flip"];
 
 function clsx(...xs) { return xs.filter(Boolean).join(" "); }
@@ -70,12 +83,14 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "OS Ass
   // Chosen transition per slide
   const transitionName = TRANSITIONS[idx % TRANSITIONS.length];
 
+  const colorWash = COLOR_WASHES[idx % COLOR_WASHES.length];
+
   return (
-    <div className="min-h-screen" ref={wrap}>
-      {/* Glass top bar (not overlapping stage) */}
-      <div className="fixed top-0 left-0 right-0 z-40 px-4 py-2">
-        <div className="mx-auto max-w-6xl flex items-center justify-between rounded-2xl border bg-white/80 backdrop-blur shadow-md px-3 py-2">
-          <div className="text-sm font-medium">{brand}</div>
+    <div className="group min-h-screen bg-black text-white relative" ref={wrap}>
+      {/* Glass top bar (hidden until hover) */}
+      <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+        <div className="mx-auto max-w-6xl flex items-center justify-between rounded-2xl border border-white/10 bg-white/15 backdrop-blur-xl shadow-lg px-4 py-2">
+          <div className="text-sm font-semibold text-white/90">{brand}</div>
           <div className="flex items-center gap-2 text-sm">
             <button className="btn" onClick={prev}>← Prev</button>
             <button className="btn" onClick={next}>Next →</button>
@@ -83,37 +98,43 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "OS Ass
             <button className="btn" onClick={() => setHelp(v => !v)}>?</button>
             <button className="btn" onClick={() => toggleFullscreen(wrap.current)}>Fullscreen</button>
             <button className="btn" onClick={() => setBlack(v => !v)}>Blackout</button>
-            <div className="px-2 py-1 text-xs opacity-80">{idx + 1} / {total}</div>
+            <div className="px-2 py-1 text-xs opacity-80 bg-white/10 rounded-lg">{idx + 1} / {total}</div>
             <button className="btn-danger" onClick={onExit}>Exit</button>
           </div>
         </div>
       </div>
 
       {/* Progress bar under top bar */}
-      <div className="fixed top-[56px] left-0 right-0 z-30">
-        <div className="mx-auto max-w-6xl h-1 bg-black/10 rounded-full overflow-hidden">
-          <div className="h-1 bg-black/70 transition-all" style={{ width: `${progress}%` }} />
+      <div className="fixed top-[70px] left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+        <div className="mx-auto max-w-6xl h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-1 bg-white/80 transition-all" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       {/* Stage */}
-      <div className="pt-[84px] pb-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="aspect-[16/9] rounded-[28px] border border-black/10 shadow-[0_30px_80px_-30px_rgba(0,0,0,.35)] overflow-hidden">
-            <SlideView
-              key={idx}
-              slide={slide}
-              themeClass={THEMES[slide.theme] || THEMES.sunset}
-              assetUrl={slide.image ? imageFor(idx) : null}
-              transition={transitionName}
-            />
+      <div className="pt-[96px] pb-10">
+        <div className="mx-auto w-[min(90vw,1100px)] h-[80vh] max-h-[720px] flex items-center justify-center">
+          <div className="relative w-full h-full rounded-[24px] overflow-hidden shadow-[0_30px_90px_-40px_rgba(0,0,0,.6)] ring-1 ring-white/10">
+            <div className={`absolute inset-0 bg-gradient-to-br ${colorWash}`} />
+            <div className="absolute inset-0 bg-white/10" />
+            <div className="relative w-full h-full flex items-center justify-center p-6 md:p-8">
+              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/65 text-neutral-900">
+                <SlideView
+                  key={idx}
+                  slide={slide}
+                  themeClass={THEMES[slide.theme] || THEMES.sunset}
+                  assetUrl={slide.image ? imageFor(idx) : null}
+                  transition={transitionName}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Timer pill */}
       <div className="fixed bottom-6 right-6 z-40">
-        <div className="rounded-xl bg-black/80 text-white px-3 py-2 text-sm font-semibold shadow-lg">{mm}:{ss}</div>
+        <div className="rounded-xl bg-white/15 text-white px-3 py-2 text-sm font-semibold shadow-lg">{mm}:{ss}</div>
       </div>
 
       {/* Overlays */}
@@ -128,7 +149,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
   const tw = clsx(
     "w-full h-full bg-gradient-to-br",
     themeClass,
-    "p-10 md:p-12",
+    "p-8 md:p-10 flex items-center justify-center",
     `transition-${transition}` // CSS in deck.css
   );
 
@@ -139,7 +160,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
     const textFirst = imageSide === "right";
     return (
       <div className={tw}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
           {textFirst ? <SlideText slide={slide} /> : <SlideImage src={assetUrl} />}
           {textFirst ? <SlideImage src={assetUrl} /> : <SlideText slide={slide} />}
         </div>
@@ -149,7 +170,7 @@ function SlideView({ slide, themeClass, assetUrl, transition }) {
 
   return (
     <div className={tw}>
-      <div className="flex flex-col h-full">
+      <div className="w-full max-w-5xl mx-auto flex flex-col h-full justify-center">
         <Header slide={slide} />
         <Body slide={slide} />
       </div>
@@ -182,9 +203,9 @@ function Body({ slide }) {
 
 function SlideImage({ src }) {
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-black/10">
+    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-black/10 shadow-xl">
       <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
     </div>
   );
 }
