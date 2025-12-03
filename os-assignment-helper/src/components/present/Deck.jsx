@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Deck.jsx — polished presenter
@@ -22,11 +22,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
  */
 
 const THEMES = {
-  ocean:  "from-sky-50 via-cyan-50 to-indigo-50 text-neutral-900",
-  carbon: "from-neutral-900 via-neutral-800 to-neutral-700 text-white",
-  sunset: "from-rose-50 via-orange-50 to-amber-50 text-neutral-900",
-  violet: "from-violet-50 via-fuchsia-50 to-pink-50 text-neutral-900",
-  forest: "from-emerald-50 via-green-50 to-lime-50 text-neutral-900",
+  ocean:  "from-sky-200/40 via-cyan-200/30 to-indigo-200/30",
+  carbon: "from-neutral-900/60 via-neutral-800/60 to-neutral-700/60",
+  sunset: "from-rose-200/40 via-orange-200/40 to-amber-200/40",
+  violet: "from-violet-200/40 via-fuchsia-200/40 to-pink-200/30",
+  forest: "from-emerald-200/40 via-green-200/40 to-lime-200/30",
 };
 
 const TRANSITIONS = ["fade", "slideL", "slideR", "zoom"];
@@ -108,56 +108,64 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "Deck" 
   }, [idx, plan]);
 
   return (
-    <div className="min-h-screen" ref={rootRef}>
-      {/* Background gradient per theme */}
-      <div className={`fixed inset-0 -z-10 bg-gradient-to-br ${themeClass}`} />
+    <div
+      className="deck-screen group/deck relative min-h-screen bg-neutral-950 text-white flex items-center justify-center px-4 py-6"
+      ref={rootRef}
+    >
+      {/* background tint */}
+      <div className="fixed inset-0 -z-10 bg-neutral-950" />
 
-      {/* Progress + top chrome */}
-      <div className="fixed top-0 left-0 right-0 z-20 px-4 py-2 flex items-center justify-between bg-white/70 backdrop-blur border-b">
-        <div className="text-sm font-medium">{brand}</div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm opacity-80">{idx + 1} / {total}</div>
-          <div className="w-36 h-1.5 bg-black/10 rounded overflow-hidden">
-            <div
-              className="h-full bg-black/70"
-              style={{ width: `${total ? ((idx + 1) / total) * 100 : 0}%` }}
-            />
+      {/* center stage */}
+      <div className="relative w-full max-w-6xl xl:max-w-7xl min-h-[75vh]">
+        {/* toolbar - only on hover/focus */}
+        <div className="pointer-events-none absolute -top-4 left-0 right-0 z-30 flex items-center justify-between opacity-0 transition-opacity duration-200 group-hover/deck:opacity-100 group-focus-within/deck:opacity-100">
+          <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-3 py-2 border border-white/10 shadow-lg">
+            <span className="text-xs uppercase tracking-[0.12em] text-white/70">{brand}</span>
+            <span className="pill">{idx + 1} / {total}</span>
           </div>
-          <div className="hidden md:flex items-center gap-1.5">
-            {Array.from({ length: total }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full ${i === idx ? "bg-black/70 w-2 h-2" : "bg-black/20"}`}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-3 py-1 rounded border" onClick={() => setIdx((i) => Math.max(0, i - 1))}>← Prev</button>
-            <button className="px-3 py-1 rounded border" onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}>Next →</button>
-            <button className="px-3 py-1 rounded border" onClick={() => setHelp((v) => !v)}>?</button>
-            <button className="px-3 py-1 rounded border" onClick={() => toggleFullscreen(rootRef.current)}>Fullscreen</button>
-            <button className="px-3 py-1 rounded border" onClick={() => setBlack((x) => !x)}>Blackout</button>
+          <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-2 py-1 border border-white/10 shadow-lg">
+            <ChromeButton onClick={() => setIdx((i) => Math.max(0, i - 1))}>← Prev</ChromeButton>
+            <ChromeButton onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}>Next →</ChromeButton>
+            <ChromeButton onClick={() => setHelp((v) => !v)}>?</ChromeButton>
+            <ChromeButton onClick={() => toggleFullscreen(rootRef.current)}>Full</ChromeButton>
+            <ChromeButton onClick={() => setBlack((x) => !x)}>Black</ChromeButton>
             {typeof onExit === "function" && (
-              <button className="px-3 py-1 rounded bg-rose-600 text-white" onClick={onExit}>Exit</button>
+              <ChromeButton className="bg-rose-500/80 text-white border-rose-400/70 hover:shadow-rose-400/20" onClick={onExit}>Exit</ChromeButton>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Timer */}
-      {showTimer && (
-        <div className="fixed top-4 right-4 z-30 text-sm font-semibold bg-black/80 text-white px-3 py-1 rounded-full shadow">
-          {mm}:{ss}
-        </div>
-      )}
+        <div className="relative h-full rounded-[32px] overflow-hidden shadow-[0_25px_80px_-40px_rgba(0,0,0,0.8)] ring-1 ring-white/10 border border-white/10 bg-white/10 backdrop-blur-2xl">
+          <div className={`absolute inset-0 bg-gradient-to-br ${themeClass}`} />
+          <div className="absolute inset-0 bg-black/30" />
 
-      {/* Slide stage */}
-      <div className="pt-16 pb-6 px-6">
-        <div className="w-full grid place-items-center">
-          <div className="w-full max-w-6xl aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white/40">
+          {/* timer */}
+          {showTimer && (
+            <div className="absolute top-5 right-5 z-30 text-sm font-semibold bg-black/70 text-white px-3 py-1 rounded-full shadow-lg opacity-80 group-hover/deck:opacity-100 group-focus-within/deck:opacity-100">
+              {mm}:{ss}
+            </div>
+          )}
+
+          {/* slide stage */}
+          <div className="relative z-10 w-full h-full">
             <div ref={slideRef} className="w-full h-full">
               <SlideCard slide={s} chosenAsset={chooseAssetForSlide(s, plan[idx]?.asset, assets)} />
             </div>
+          </div>
+        </div>
+
+        {/* progress bar */}
+        <div className="absolute -bottom-3 left-0 right-0 flex items-center gap-3 opacity-0 transition-opacity duration-200 group-hover/deck:opacity-100 group-focus-within/deck:opacity-100">
+          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-white/80" style={{ width: `${total ? ((idx + 1) / total) * 100 : 0}%` }} />
+          </div>
+          <div className="hidden md:flex items-center gap-1.5">
+            {Array.from({ length: total }).map((_, i) => (
+              <span
+                key={i}
+                className={`block rounded-full transition-all ${i === idx ? "w-2 h-2 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -166,6 +174,17 @@ export default function Deck({ slides = [], assets = [], onExit, brand = "Deck" 
       {black && <div className="fixed inset-0 bg-black z-40" onClick={() => setBlack(false)} />}
       {help && <Help onClose={() => setHelp(false)} />}
     </div>
+  );
+}
+
+function ChromeButton({ children, className = "", ...rest }) {
+  return (
+    <button
+      className={`px-3 py-1 rounded-full border border-white/20 bg-white/10 text-xs font-medium text-white/90 hover:bg-white/20 hover:border-white/30 transition ${className}`}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -186,27 +205,27 @@ function SlideCard({ slide, chosenAsset }) {
 
   // text block
   const TextBlock = (
-    <div className="h-full p-8 md:p-10 flex flex-col">
-      <div className="mb-4">
-        {title && <div className="text-4xl md:text-5xl font-extrabold tracking-tight">{title}</div>}
-        {subtitle && <div className="text-xl md:text-2xl opacity-80 mt-1">{subtitle}</div>}
+    <div className="h-full p-8 md:p-12 flex flex-col justify-center gap-4 text-neutral-900">
+      <div className="space-y-2">
+        {title && <div className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-sm">{title}</div>}
+        {subtitle && <div className="text-xl md:text-2xl text-neutral-700">{subtitle}</div>}
       </div>
 
-      {body && <p className="text-lg md:text-xl leading-relaxed">{body}</p>}
+      {body && <p className="text-lg md:text-xl leading-relaxed text-neutral-800">{body}</p>}
 
       {!!bullets.length && (
-        <ul className="mt-4 space-y-2 text-lg md:text-xl leading-relaxed list-disc pl-6">
+        <ul className="space-y-2 text-lg md:text-xl leading-relaxed list-disc pl-6 text-neutral-900">
           {bullets.map((b, i) => <li key={i}>{b}</li>)}
         </ul>
       )}
 
       {hasCols && (
-        <div className="mt-6 grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
           {columns.map((col, i) => (
-            <div key={i} className="rounded-xl bg-white/60 backdrop-blur p-4 border border-black/10">
-              {col.title && <div className="font-semibold mb-2">{col.title}</div>}
+            <div key={i} className="rounded-2xl bg-white/70 backdrop-blur border border-black/5 p-4 shadow">
+              {col.title && <div className="font-semibold mb-2 text-neutral-900">{col.title}</div>}
               {Array.isArray(col.bullets) && col.bullets.length > 0 && (
-                <ul className="space-y-2 list-disc pl-5">
+                <ul className="space-y-2 list-disc pl-5 text-neutral-900">
                   {col.bullets.map((x, j) => <li key={j}>{x}</li>)}
                 </ul>
               )}
@@ -215,7 +234,6 @@ function SlideCard({ slide, chosenAsset }) {
         </div>
       )}
 
-      {/* Notes exist but hidden during present; keep reserved space tiny if you want */}
       {notes ? <div className="mt-auto text-xs opacity-0">{notes}</div> : null}
     </div>
   );
@@ -223,41 +241,42 @@ function SlideCard({ slide, chosenAsset }) {
   // image panel
   const ImagePanel = wantsImage ? (
     <div className="relative w-full h-full">
-      {/* faded image background */}
       <img
         src={chosenAsset}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover opacity-50"
+        className="absolute inset-0 w-full h-full object-cover opacity-70"
         draggable={false}
       />
-      <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-white/25 backdrop-blur-sm" />
     </div>
   ) : (
-    <div className="w-full h-full bg-white/30" />
+    <div className="w-full h-full bg-white/20" />
   );
 
-  if (wantsImage) {
-    // two-column layout: image | text OR text | image
-    return (
-      <div className="w-full h-full grid grid-cols-1 md:grid-cols-2">
-        {imageSide === "left" ? (
-          <>
-            <div className="hidden md:block">{ImagePanel}</div>
-            {TextBlock}
-          </>
-        ) : (
-          <>
-            {TextBlock}
-            <div className="hidden md:block">{ImagePanel}</div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // single column textual slide
-  return (
+  const Body = wantsImage ? (
+    <div className="w-full h-full grid grid-cols-1 md:grid-cols-2">
+      {imageSide === "left" ? (
+        <>
+          <div className="h-full">{ImagePanel}</div>
+          {TextBlock}
+        </>
+      ) : (
+        <>
+          {TextBlock}
+          <div className="h-full">{ImagePanel}</div>
+        </>
+      )}
+    </div>
+  ) : (
     <div className="w-full h-full">{TextBlock}</div>
+  );
+
+  return (
+    <div className="w-full h-full flex items-center justify-center p-6 md:p-10">
+      <div className="w-full h-full max-w-6xl min-h-[80vh] rounded-[28px] bg-white/90 text-neutral-900 shadow-2xl overflow-hidden backdrop-blur-xl border border-black/5">
+        {Body}
+      </div>
+    </div>
   );
 }
 
