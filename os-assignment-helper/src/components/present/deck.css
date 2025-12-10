@@ -1,0 +1,36 @@
+/* src/components/present/deck.css */
+.btn{
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 0.375rem 0.75rem;
+  background: rgba(255,255,255,0.7);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:hover{ background: white; box-shadow: 0 6px 18px -8px rgba(0,0,0,0.25); }
+.btn-danger{
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 0.375rem 0.75rem;
+  background: rgb(225 29 72);
+  color: white;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-danger:hover{ background: rgb(190 18 60); box-shadow: 0 6px 18px -8px rgba(0,0,0,0.25); }
+
+/* Slide transitions */
+.transition-fade{ animation: fadeIn 420ms ease both; }
+.transition-slide{ animation: slideIn 420ms ease both; }
+.transition-zoom{ animation: zoomIn 420ms ease both; }
+.transition-flip{ animation: flipIn 560ms ease both; }
+
+@keyframes fadeIn{ from{opacity:.0; transform:translateY(6px)} to{opacity:1; transform:none} }
+@keyframes slideIn{ from{opacity:.0; transform:translateX(24px)} to{opacity:1; transform:none} }
+@keyframes zoomIn{ from{opacity:.0; transform:scale(.96)} to{opacity:1; transform:scale(1)} }
+@keyframes flipIn{
+  0%{opacity:0; transform:rotateX(-70deg) translateZ(-60px)}
+  100%{opacity:1; transform:rotateX(0) translateZ(0)}
+}

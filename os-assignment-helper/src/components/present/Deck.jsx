@@ -1,347 +1,261 @@
+// src/components/present/Deck.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import "./deck.css";
 
 /**
- * Deck.jsx
- * - Renders slides from either a structured array or markdown text
- * - Fully supports:
- *   title • subtitle • body • bullets • columns (N columns) • notes • tags.bg • tags.layout
- * - Controls: ←/→ (nav), Space (pause timer), T (toggle timer), F (fullscreen), B (blackout),
- *             R (reset timer), ? (help), N (notes), Esc (exit)
+ * Presenter with:
+ * - Non-overlapping top bar
+ * - Rounded, “IG-post” stage (16:9) in center
+ * - Themes: ocean | carbon | sunset | violet | forest
+ * - Optional image per slide (random from /src/assets), left/right placement
+ * - 4 transitions (fade, slide, zoom, flip) picked deterministically by index
+ * - Keyboard: ←/→ next/prev • F fullscreen • B blackout • N notes • ? help • Esc exit
  */
 
-export default function Deck({ slides, slidesText, onExit, brand = "OS Assignment" }) {
-    const [idx, setIdx] = useState(0);
-    const [timerSec, setTimerSec] = useState(8 * 60);
-    const [timerOn, setTimerOn] = useState(true);
-    const [showTimer, setShowTimer] = useState(true);
-    const [showHelp, setShowHelp] = useState(false);
-    const [showNotes, setShowNotes] = useState(false);
-    const [black, setBlack] = useState(false);
-    const rootRef = useRef(null);
-    const runningRef = useRef(true);
-    runningRef.current = timerOn;
+const THEMES = {
+  ocean:  "from-sky-50 via-cyan-50 to-indigo-50",
+  carbon: "from-neutral-900 via-neutral-800 to-neutral-700 text-white",
+  sunset: "from-rose-50 via-orange-50 to-amber-50",
+  violet: "from-violet-50 via-fuchsia-50 to-pink-50",
+  forest: "from-emerald-50 via-green-50 to-lime-50"
+};
 
-    const parsedSlides = useMemo(() => {
-        if (Array.isArray(slides)) return normalizeSlides(slides);
-        return normalizeSlides(parseMarkdown(slidesText || ""));
-    }, [slides, slidesText]);
+const COLOR_WASHES = [
+  "from-white/70 via-white/60 to-white/40",
+  "from-orange-50/80 via-amber-100/80 to-amber-200/60",
+  "from-sky-50/80 via-cyan-100/70 to-indigo-100/60",
+  "from-rose-50/80 via-pink-100/70 to-fuchsia-100/60",
+  "from-emerald-50/80 via-green-100/70 to-lime-100/60",
+  "from-slate-50/80 via-gray-100/70 to-slate-200/50",
+  "from-purple-50/80 via-violet-100/70 to-indigo-100/60",
+  "from-yellow-50/80 via-orange-100/70 to-amber-100/60",
+  "from-cyan-50/80 via-sky-100/70 to-emerald-100/60",
+  "from-neutral-50/80 via-stone-100/70 to-zinc-100/60"
+];
 
-    const total = parsedSlides.length;
-    const s = parsedSlides[idx] ?? emptySlide();
+const TRANSITIONS = ["fade", "slide", "zoom", "flip"];
 
-    // hash navigation
-    useEffect(() => {
-        const n = Number(String(location.hash).replace("#", ""));
-        if (!Number.isNaN(n) && n > 0 && n <= total) setIdx(n - 1);
-    }, [total]);
-    useEffect(() => { location.hash = String(idx + 1); }, [idx]);
+function clsx(...xs) { return xs.filter(Boolean).join(" "); }
 
-    // timer
-    useEffect(() => {
-        const id = setInterval(() => {
-            if (runningRef.current) setTimerSec((t) => Math.max(0, t - 1));
-        }, 1000);
-        return () => clearInterval(id);
-    }, []);
+export default function Deck({ slides = [], assets = [], onExit, brand = "OS Assignment" }) {
+  const [idx, setIdx] = useState(0);
+  const [black, setBlack] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [sec, setSec] = useState(8 * 60);
+  const running = useRef(true);
+  const wrap = useRef(null);
 
-    // keys
-    useEffect(() => {
-        const onKey = (e) => {
-            if (e.key === "ArrowRight" || e.key === "PageDown") setIdx((i) => Math.min(total - 1, i + 1));
-            if (e.key === "ArrowLeft" || e.key === "PageUp") setIdx((i) => Math.max(0, i - 1));
-            if (e.key === " ") setTimerOn((v) => !v);
-            if (e.key === "t" || e.key === "T") setShowTimer((v) => !v);
-            if (e.key === "b" || e.key === "B") setBlack((v) => !v);
-            if (e.key === "r" || e.key === "R") setTimerSec(8 * 60);
-            if (e.key === "n" || e.key === "N") setShowNotes((v) => !v);
-            if (e.key === "?") setShowHelp((v) => !v);
-            if (e.key === "f" || e.key === "F") toggleFullscreen(rootRef.current);
-            if (e.key === "Escape") {
-                if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-                onExit?.();
-            }
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onExit, total]);
+  const total = slides.length || 0;
+  const slide = slides[idx] || {};
 
-    const mm = String(Math.floor(timerSec / 60)).padStart(2, "0");
-    const ss = String(timerSec % 60).padStart(2, "0");
-    const progress = total ? ((idx + 1) / total) * 100 : 0;
+  // Timer
+  useEffect(() => {
+    const id = setInterval(() => { if (running.current) setSec(s => Math.max(0, s - 1)); }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-    const themeClass = pickThemeClass(s.tags?.bg);
+  // Keys
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === "Enter" || e.key === " ") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft"  || e.key === "PageUp") { e.preventDefault(); prev(); }
+      if (e.key === "f" || e.key === "F") toggleFullscreen(wrap.current);
+      if (e.key === "b" || e.key === "B") setBlack(v => !v);
+      if (e.key === "n" || e.key === "N") setNotesOpen(v => !v);
+      if (e.key === "?") setHelp(v => !v);
+      if (e.key === "Escape") { if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); onExit?.(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onExit]);
 
-    return (
-        <div className="min-h-screen bg-neutral-100" ref={rootRef}>
-            {/* progress */}
-            <div className="fixed top-0 left-0 right-0 h-1 bg-neutral-200">
-                <div className="h-1 bg-neutral-900" style={{ width: `${progress}%` }} />
-            </div>
+  const prev = () => setIdx(i => Math.max(0, i - 1));
+  const next = () => setIdx(i => Math.min(total - 1, i + 1));
 
-            {/* top bar */}
-            <div className="fixed top-2 left-2 right-2 z-20 flex items-center justify-between">
-                <div className="text-xs px-2 py-1 rounded bg-white/80 backdrop-blur border">
-                    {brand}
-                </div>
-                <div className="flex items-center gap-2">
-                    <NavBtn onClick={() => setIdx((i) => Math.max(0, i - 1))}>← Prev</NavBtn>
-                    <NavBtn onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}>Next →</NavBtn>
-                    <NavBtn onClick={() => setShowNotes((v) => !v)}>Notes</NavBtn>
-                    <NavBtn onClick={() => setShowHelp((v) => !v)}>?</NavBtn>
-                    <NavBtn onClick={() => toggleFullscreen(rootRef.current)}>Fullscreen</NavBtn>
-                    <NavBtn onClick={() => setBlack((v) => !v)}>Blackout</NavBtn>
-                    <span className="text-xs px-2 py-1 rounded bg-white/80 backdrop-blur border">
-            {idx + 1} / {total}
-          </span>
-                    <button
-                        className="px-3 py-1 rounded bg-rose-600 text-white text-sm"
-                        onClick={() => onExit?.()}
-                    >
-                        Exit
-                    </button>
-                </div>
-            </div>
+  const mm = String(Math.floor(sec/60)).padStart(2, "0");
+  const ss = String(sec%60).padStart(2, "0");
+  const progress = total ? ((idx + 1) / total) * 100 : 0;
 
-            {/* slide stage */}
-            <div className="pt-12 pb-6 px-6">
-                <div className="w-full grid place-items-center">
-                    <div className="w-full max-w-6xl aspect-[16/9] rounded-2xl shadow-2xl overflow-hidden">
-                        <div className={`w-full h-full text-white ${themeClass}`}>
-                            <SlideContent slide={s} />
-                        </div>
-                    </div>
-                </div>
-            </div>
+  // Stable random image per slide index
+  const imageFor = (i) => (assets.length ? assets[i % assets.length] : null);
 
-            {/* timer */}
-            {showTimer && (
-                <div className="fixed bottom-4 right-4 px-3 py-2 rounded-xl bg-black/80 text-white font-bold text-lg">
-                    {mm}:{ss}
-                </div>
-            )}
+  // Chosen transition per slide
+  const transitionName = TRANSITIONS[idx % TRANSITIONS.length];
 
-            {/* overlays */}
-            {black && <div className="fixed inset-0 bg-black z-30" onClick={() => setBlack(false)} />}
+  const colorWash = COLOR_WASHES[idx % COLOR_WASHES.length];
 
-            {showHelp && (
-                <Overlay title="Keyboard" onClose={() => setShowHelp(false)}>
-                    <ul className="grid grid-cols-2 gap-2 text-sm">
-                        <li><b>← / →</b> : Prev / Next</li>
-                        <li><b>F</b> : Fullscreen</li>
-                        <li><b>Space</b> : Pause/Resume timer</li>
-                        <li><b>T</b> : Toggle timer</li>
-                        <li><b>B</b> : Blackout</li>
-                        <li><b>R</b> : Reset 8:00</li>
-                        <li><b>N</b> : Notes</li>
-                        <li><b>?</b> : Help</li>
-                        <li><b>Esc</b> : Exit</li>
-                    </ul>
-                </Overlay>
-            )}
-
-            <NotesDrawer open={showNotes} onClose={() => setShowNotes(false)} notes={s.notes} />
+  return (
+    <div className="group min-h-screen bg-black text-white relative" ref={wrap}>
+      {/* Glass top bar (hidden until hover) */}
+      <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+        <div className="mx-auto max-w-6xl flex items-center justify-between rounded-2xl border border-white/10 bg-white/15 backdrop-blur-xl shadow-lg px-4 py-2">
+          <div className="text-sm font-semibold text-white/90">{brand}</div>
+          <div className="flex items-center gap-2 text-sm">
+            <button className="btn" onClick={prev}>← Prev</button>
+            <button className="btn" onClick={next}>Next →</button>
+            <button className="btn" onClick={() => setNotesOpen(v => !v)}>Notes</button>
+            <button className="btn" onClick={() => setHelp(v => !v)}>?</button>
+            <button className="btn" onClick={() => toggleFullscreen(wrap.current)}>Fullscreen</button>
+            <button className="btn" onClick={() => setBlack(v => !v)}>Blackout</button>
+            <div className="px-2 py-1 text-xs opacity-80 bg-white/10 rounded-lg">{idx + 1} / {total}</div>
+            <button className="btn-danger" onClick={onExit}>Exit</button>
+          </div>
         </div>
-    );
-}
+      </div>
 
-/* ───────────────────────────────────────── helpers & rendering ───────────── */
-
-function SlideContent({ slide }) {
-    const { title, subtitle, body, bullets = [], columns = [], tags = {} } = slide || {};
-    const layout = tags.layout || (columns.length ? "split" : "default");
-
-    const cardPad = "p-10 md:p-12";
-    const titleEl = title ? <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{title}</h1> : null;
-    const subtitleEl = subtitle ? <h2 className="text-xl md:text-2xl opacity-90 mt-1">{subtitle}</h2> : null;
-    const bodyEl = body ? <p className="text-lg md:text-xl leading-relaxed mt-4 opacity-95">{body}</p> : null;
-    const bulletsEl =
-        bullets.length > 0 ? (
-            <ul className="list-disc ml-6 mt-6 space-y-2 text-lg md:text-xl leading-relaxed">
-                {bullets.map((b, i) => <li key={i}>{b}</li>)}
-            </ul>
-        ) : null;
-
-    if (layout === "split") {
-        // N-column grid (2 or 3+ supported)
-        const cols = Math.max(2, columns.length || 2);
-        return (
-            <div className={`w-full h-full ${cardPad} flex flex-col`}>
-                <div>
-                    {titleEl}
-                    {subtitleEl}
-                    {bodyEl}
-                </div>
-
-                <div className="flex-1 mt-6">
-                    <div
-                        className="grid gap-6 md:gap-8"
-                        style={{
-                            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                        }}
-                    >
-                        {columns.map((col, idx) => (
-                            <div key={idx} className="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/15">
-                                {col.title && <div className="font-semibold mb-2">{col.title}</div>}
-                                <ul className="list-disc ml-5 space-y-2 text-base md:text-lg">
-                                    {(col.bullets || []).map((t, i) => <li key={i}>{t}</li>)}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {bulletsEl}
-            </div>
-        );
-    }
-
-    return (
-        <div className={`w-full h-full ${cardPad} flex flex-col`}>
-            {titleEl}
-            {subtitleEl}
-            {bodyEl}
-            <div className="flex-1">{bulletsEl}</div>
-            <div className="mt-6 h-[2px] w-full bg-white/20" />
+      {/* Progress bar under top bar */}
+      <div className="fixed top-[70px] left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+        <div className="mx-auto max-w-6xl h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-1 bg-white/80 transition-all" style={{ width: `${progress}%` }} />
         </div>
-    );
-}
+      </div>
 
-function NavBtn({ children, onClick }) {
-    return (
-        <button
-            className="px-3 py-1 rounded border bg-white/80 backdrop-blur text-sm"
-            onClick={onClick}
-        >
-            {children}
-        </button>
-    );
-}
-
-function Overlay({ title, children, onClose }) {
-    return (
-        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm grid place-items-center p-4" onClick={onClose}>
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">{title}</h3>
-                    <button className="rounded px-2 py-1 border" onClick={onClose}>Close</button>
-                </div>
-                <div className="mt-4">{children}</div>
+      {/* Stage */}
+      <div className="pt-[96px] pb-10">
+        <div className="mx-auto w-[min(92vw,1220px)] h-[82vh] max-h-[780px] flex items-center justify-center">
+          <div className="relative w-full h-full rounded-[24px] overflow-hidden shadow-[0_32px_95px_-42px_rgba(0,0,0,.7)] ring-1 ring-white/10">
+            <div className={`absolute inset-0 bg-gradient-to-br ${colorWash}`} />
+            <div className="absolute inset-0 bg-white/12" />
+            <div className="relative w-full h-full flex items-center justify-center p-8 md:p-10">
+              <div className="w-full h-full rounded-2xl overflow-hidden ring-1 ring-white/30 bg-white/80 text-neutral-900">
+                <SlideView
+                  key={idx}
+                  slide={slide}
+                  themeClass={THEMES[slide.theme] || THEMES.sunset}
+                  assetUrl={slide.image ? imageFor(idx) : null}
+                  transition={transitionName}
+                />
+              </div>
             </div>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Timer pill */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="rounded-xl bg-white/15 text-white px-3 py-2 text-sm font-semibold shadow-lg">{mm}:{ss}</div>
+      </div>
+
+      {/* Overlays */}
+      {black && <div className="fixed inset-0 bg-black z-50" onClick={() => setBlack(false)} />}
+      {help && <Help onClose={() => setHelp(false)} />}
+      <Notes open={notesOpen} onClose={() => setNotesOpen(false)} notes={slide?.notes} />
+    </div>
+  );
 }
 
-function NotesDrawer({ open, onClose, notes }) {
+function SlideView({ slide, themeClass, assetUrl, transition }) {
+  const tw = clsx(
+    "w-full h-full bg-gradient-to-br",
+    themeClass,
+    "p-10 md:p-14 flex items-center justify-center",
+    `transition-${transition}` // CSS in deck.css
+  );
+
+  const imageSide = slide?.imageSide === "left" ? "left" : "right";
+  const hasImage = Boolean(assetUrl);
+
+  if (hasImage) {
+    const textFirst = imageSide === "right";
     return (
-        <div
-            className={`fixed bottom-0 left-0 right-0 z-30 transition-transform duration-300 ${
-                open ? "translate-y-0" : "translate-y-full"
-            }`}
-        >
-            <div className="mx-auto max-w-5xl rounded-t-2xl bg-white border-t shadow-xl">
-                <div className="flex items-center justify-between px-4 py-2">
-                    <div className="text-sm font-medium">Speaker notes</div>
-                    <button className="rounded px-2 py-1 border" onClick={onClose}>Close</button>
-                </div>
-                <div className="px-4 pb-4">
-                    {notes ? (
-                        <pre className="whitespace-pre-wrap text-sm leading-relaxed">{notes}</pre>
-                    ) : (
-                        <div className="text-sm opacity-70">No notes</div>
-                    )}
-                </div>
-            </div>
+      <div className={tw}>
+        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-10 items-center px-4 md:px-8">
+          {textFirst ? <SlideText slide={slide} centered /> : <SlideImage src={assetUrl} />}
+          {textFirst ? <SlideImage src={assetUrl} /> : <SlideText slide={slide} centered />}
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className={tw}>
+      <div className="w-full max-w-4xl mx-auto flex flex-col h-full justify-center text-center px-4 md:px-6">
+        <Header slide={slide} centered />
+        <Body slide={slide} centered />
+      </div>
+    </div>
+  );
 }
 
-/* parsing & utilities */
-
-function emptySlide() {
-    return { title: "", subtitle: "", body: "", bullets: [], columns: [], notes: "", tags: {} };
+function Header({ slide, centered }) {
+  return (
+    <div className="mb-6">
+      {slide?.title && <h1 className={clsx("text-4xl md:text-5xl font-extrabold tracking-tight", centered && "text-center mx-auto max-w-3xl")}>{slide.title}</h1>}
+      {slide?.subtitle && <h2 className={clsx("text-xl md:text-2xl opacity-80 mt-2", centered && "text-center mx-auto max-w-2xl")}>{slide.subtitle}</h2>}
+    </div>
+  );
 }
 
-function normalizeSlides(arr) {
-    return arr.map((s) => ({
-        title: s.title || "",
-        subtitle: s.subtitle || "",
-        body: s.body || "",
-        bullets: Array.isArray(s.bullets) ? s.bullets : [],
-        columns: Array.isArray(s.columns) ? s.columns : [],
-        notes: s.notes || "",
-        tags: s.tags || {},
-    }));
+function Body({ slide, centered }) {
+  const textAlign = centered || slide?.align === "center" ? "text-center" : "text-left";
+  return (
+    <div className="flex-1">
+      {slide?.body && <p className={clsx("max-w-3xl text-lg leading-relaxed mb-5 mx-auto", textAlign)}>{slide.body}</p>}
+      {Array.isArray(slide?.bullets) && slide.bullets.length > 0 && (
+        <ul className={clsx("space-y-3 text-lg leading-relaxed list-disc list-inside max-w-3xl mx-auto", textAlign)}>
+          {slide.bullets.map((b, i) => <li key={i} className={textAlign}>{b}</li>)}
+        </ul>
+      )}
+    </div>
+  );
 }
 
-/** Minimal markdown → structured converter */
-function parseMarkdown(text) {
-    if (!text) return [];
-    const pages = text.split(/\n\s*---\s*\n/);
-    return pages.map((p) => {
-        const lines = p.split(/\r?\n/);
-        const tags = {};
-
-        // [bg=ocean][layout=split]
-        if (lines[0]?.trim().startsWith("[") && lines[0]?.trim().endsWith("]")) {
-            for (const chunk of lines.shift().trim().slice(1, -1).split(/\]\s*\[/)) {
-                const [k, v] = chunk.split("=");
-                if (k && v) tags[k.trim()] = v.trim();
-            }
-        }
-
-        let title = "", subtitle = "", body = "";
-        const bullets = [];
-        const cols = [];
-        let curCol = null;
-
-        if (lines[0]?.startsWith("# "))  title = lines.shift().replace(/^#\s*/, "");
-        if (lines[0]?.startsWith("## ")) subtitle = lines.shift().replace(/^##\s*/, "");
-
-        for (const raw of lines) {
-            const ln = raw.replace(/\t/g, "    ");
-
-            // new column marker
-            if (/^\s*::\s*$/.test(ln)) {
-                if (!curCol) { curCol = { title: "", bullets: [] }; cols.push(curCol); }
-                else { curCol = { title: "", bullets: [] }; cols.push(curCol); }
-                continue;
-            }
-
-            // column title like "### Title" inside split
-            if (curCol && /^\s*###\s+/.test(ln)) {
-                curCol.title = ln.replace(/^\s*###\s+/, "");
-                continue;
-            }
-
-            if (/^\s*-\s+/.test(ln)) {
-                const item = ln.replace(/^\s*-\s+/, "");
-                if (curCol) curCol.bullets.push(item);
-                else bullets.push(item);
-                continue;
-            }
-
-            if (ln.trim()) body += (body ? "\n" : "") + ln.trim();
-        }
-
-        const columns = cols.length ? cols : [];
-        return { title, subtitle, body, bullets, columns, tags, notes: "" };
-    });
+function SlideImage({ src }) {
+  return (
+    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-black/15 shadow-2xl bg-black/30">
+      <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
+    </div>
+  );
 }
 
-function pickThemeClass(bg) {
-    switch (bg) {
-        case "ocean":
-            return "bg-gradient-to-b from-slate-900/90 via-slate-900/70 to-cyan-500/40";
-        case "carbon":
-            return "bg-gradient-to-b from-neutral-900 via-neutral-800 to-neutral-700";
-        case "sunset":
-        default:
-            return "bg-gradient-to-b from-neutral-800/90 via-neutral-800/70 to-rose-500/35";
-    }
+function SlideText({ slide, centered }) {
+  return (
+    <div className="flex flex-col px-4 md:px-6 text-center">
+      <Header slide={slide} centered={centered} />
+      <Body slide={slide} centered={centered} />
+    </div>
+  );
+}
+
+function Help({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm grid place-items-center p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e)=>e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-2">Keyboard</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>→ / Space / Enter : Next</div><div>← : Previous</div>
+          <div>F : Fullscreen</div><div>B : Blackout</div>
+          <div>N : Notes</div><div>? : Help</div>
+          <div>Esc : Exit</div><div>8:00 timer auto-runs</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Notes({ open, onClose, notes }) {
+  return (
+    <div className={clsx(
+      "fixed bottom-0 left-0 right-0 z-40 transition-transform duration-300",
+      open ? "translate-y-0" : "translate-y-full"
+    )}>
+      <div className="mx-auto max-w-5xl rounded-t-2xl bg-white border-t shadow-xl">
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="text-sm font-medium">Speaker notes</div>
+          <button className="btn" onClick={onClose}>Close</button>
+        </div>
+        <div className="px-4 pb-4">
+          {notes ? <pre className="whitespace-pre-wrap text-sm leading-relaxed">{notes}</pre> : <div className="text-sm opacity-70">No notes</div>}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function toggleFullscreen(el) {
-    if (!el) return;
-    if (!document.fullscreenElement) el.requestFullscreen?.().catch(() => {});
-    else document.exitFullscreen?.().catch(() => {});
+  if (!el) return;
+  if (!document.fullscreenElement) el.requestFullscreen?.().catch(()=>{});
+  else document.exitFullscreen?.().catch(()=>{});
 }

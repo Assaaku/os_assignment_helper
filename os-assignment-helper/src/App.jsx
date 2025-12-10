@@ -1,177 +1,120 @@
+// src/App.jsx
 import React, { useMemo, useState } from "react";
 import Deck from "@/components/present/Deck";
 import { DEFAULT_SLIDES } from "@/components/present/defaultSlides";
 
-/**
- * App.jsx — stable editor → presenter flow
- * - Starts in EDITOR mode (never auto-presents)
- * - Two editors: "Structured (JSON)" and "Markdown"
- * - Only enters presentation when user clicks Start
- * - Import/Export for JSON slides
- */
+// Auto-discover images in /src/assets (Vite)
+const imageModules = import.meta.glob("/src/assets/*.{png,jpg,jpeg,webp,gif,svg}", { eager: true });
+const ASSET_URLS = Object.values(imageModules).map(m => m?.default).filter(Boolean);
+
 export default function App() {
-    // --- view state ---
-    const [presenting, setPresenting] = useState(false);
-    const [mode, setMode] = useState<"structured" | "markdown">("structured");
+  const [presenting, setPresenting] = useState(false);
+  const [jsonText, setJsonText] = useState(JSON.stringify(DEFAULT_SLIDES, null, 2));
+  const [jsonError, setJsonError] = useState(null);
 
-    // --- editors state ---
-    const [jsonText, setJsonText] = useState(() =>
-        JSON.stringify(DEFAULT_SLIDES, null, 2)
-    );
-    const [mdText, setMdText] = useState("");
-
-    // --- parse JSON safely for structured mode ---
-    const { parsedSlides, jsonError, slideCount } = useMemo(() => {
-        if (mode !== "structured") {
-            return { parsedSlides: [], jsonError: null, slideCount: 0 };
-        }
-        try {
-            const arr = JSON.parse(jsonText);
-            if (!Array.isArray(arr)) throw new Error("Top-level value must be an array.");
-            return { parsedSlides: arr, jsonError: null, slideCount: arr.length };
-        } catch (e) {
-            return { parsedSlides: [], jsonError: (e as Error).message, slideCount: 0 };
-        }
-    }, [jsonText, mode]);
-
-    // Only allow starting when input looks valid
-    const canStart =
-        (mode === "structured" && !jsonError && parsedSlides.length > 0) ||
-        (mode === "markdown" && mdText.trim().length > 0);
-
-    // --- actions ---
-    const handleStart = () => {
-        if (canStart) setPresenting(true);
-    };
-
-    const handleExit = () => {
-        // Always return to EDITOR; do not keep fullscreen, etc. (Deck handles Esc)
-        setPresenting(false);
-    };
-
-    // --- render ---
-    if (presenting) {
-        return mode === "structured" ? (
-            <Deck slides={parsedSlides} onExit={handleExit} />
-        ) : (
-            <Deck slidesText={mdText} onExit={handleExit} />
-        );
+  const slides = useMemo(() => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      if (!Array.isArray(parsed)) throw new Error("Root must be an array of slide objects.");
+      setJsonError(null);
+      return parsed;
+    } catch (e) {
+      setJsonError(e?.message || "Invalid JSON");
+      return [];
     }
+  }, [jsonText]);
 
+  const start = () => { if (!jsonError && slides.length) setPresenting(true); };
+  const stop  = () => setPresenting(false);
+
+  if (presenting) {
     return (
-        <div className="min-h-screen bg-neutral-50 text-neutral-900">
-            <div className="mx-auto max-w-6xl p-6 md:p-10 space-y-8">
-                <header className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">OS Assignment Helper</h1>
-                        <p className="text-sm opacity-70">Process &amp; Thread — presentation builder</p>
-                    </div>
-
-                    <div className="inline-flex rounded-lg overflow-hidden border bg-white">
-                        <button
-                            className={`px-3 py-2 text-sm ${mode === "structured" ? "bg-neutral-900 text-white" : ""}`}
-                            onClick={() => setMode("structured")}
-                        >
-                            Structured (JSON)
-                        </button>
-                        <button
-                            className={`px-3 py-2 text-sm ${mode === "markdown" ? "bg-neutral-900 text-white" : ""}`}
-                            onClick={() => setMode("markdown")}
-                        >
-                            Markdown
-                        </button>
-                    </div>
-                </header>
-
-                {mode === "structured" ? (
-                    <section className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm">
-                                {jsonError ? (
-                                    <span className="text-red-600 font-medium">JSON error: {jsonError}</span>
-                                ) : (
-                                    <span className="opacity-70">✓ {slideCount} slides parsed</span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    className="px-3 py-2 rounded-lg border bg-white text-sm"
-                                    onClick={() => setJsonText(JSON.stringify(DEFAULT_SLIDES, null, 2))}
-                                >
-                                    Load default slides
-                                </button>
-                                <button
-                                    className="px-3 py-2 rounded-lg border bg-white text-sm"
-                                    onClick={() => {
-                                        const blob = new Blob([jsonText], { type: "application/json" });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement("a");
-                                        a.href = url;
-                                        a.download = `slides-${Date.now()}.json`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                >
-                                    Export JSON
-                                </button>
-                                <label className="px-3 py-2 rounded-lg border bg-white text-sm cursor-pointer">
-                                    Import JSON
-                                    <input
-                                        type="file"
-                                        accept="application/json"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            if (!f) return;
-                                            const r = new FileReader();
-                                            r.onload = () => setJsonText(String(r.result || ""));
-                                            r.readAsText(f);
-                                            e.currentTarget.value = "";
-                                        }}
-                                    />
-                                </label>
-                            </div>
-                        </div>
-
-                        <textarea
-                            className="w-full h-[520px] rounded-xl border bg-white p-4 font-mono text-sm outline-none focus:ring-2 focus:ring-black/20"
-                            value={jsonText}
-                            onChange={(e) => setJsonText(e.target.value)}
-                            spellCheck={false}
-                        />
-                    </section>
-                ) : (
-                    <section className="space-y-3">
-                        <div className="text-sm opacity-70">
-                            Use <code>#</code> title, <code>##</code> subtitle, <code>-</code> bullets. Separate slides with
-                            <code> --- </code>. Use <code>::</code> to split columns. Per-slide tags: <code>[bg=ocean]</code>,{" "}
-                            <code>[layout=split]</code>.
-                        </div>
-                        <textarea
-                            className="w-full h-[520px] rounded-xl border bg-white p-4 font-mono text-sm outline-none focus:ring-2 focus:ring-black/20"
-                            value={mdText}
-                            onChange={(e) => setMdText(e.target.value)}
-                            spellCheck={false}
-                            placeholder={`[bg=ocean]\n# Процесс ба Thread\n## Товчоор\n- ...\n::\n- left column\n::\n- right column\n\n---\n# Дараагийн слайд ...`}
-                        />
-                    </section>
-                )}
-
-                <div className="flex gap-3">
-                    <button
-                        className={`px-4 py-2 rounded-lg text-white ${canStart ? "bg-neutral-900" : "bg-neutral-400 cursor-not-allowed"}`}
-                        onClick={handleStart}
-                    >
-                        Start presentation (F for fullscreen)
-                    </button>
-                    <button
-                        className="px-4 py-2 rounded-lg border"
-                        onClick={() => setJsonText(JSON.stringify(DEFAULT_SLIDES, null, 2))}
-                    >
-                        Reset to default
-                    </button>
-                </div>
-            </div>
-        </div>
+      <Deck
+        slides={slides}
+        assets={ASSET_URLS}
+        brand="OS Assignment"
+        onExit={stop}
+      />
     );
+  }
+
+  // Editor screen (no overlap; clean glass UI)
+  return (
+    <div className="min-h-screen text-neutral-900 bg-[radial-gradient(1200px_600px_at_40%_-10%,#e0f2fe,transparent),radial-gradient(800px_400px_at_90%_10%,#fde68a,transparent)]">
+      <div className="mx-auto max-w-6xl p-6 md:p-10">
+        <header className="mb-6 flex items-end justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">OS Assignment Helper</h1>
+            <p className="text-sm opacity-70">Process & Thread — presentation builder</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-black/80 text-white px-3 py-1 text-xs">Editor</span>
+            <button
+              className="inline-flex items-center justify-center px-3 py-2 rounded-lg border bg-neutral-900 text-white text-sm"
+              onClick={start}
+              disabled={!!jsonError || slides.length === 0}
+              title={jsonError ? "Fix JSON first" : "Start presentation"}
+            >
+              Present ▶
+            </button>
+          </div>
+        </header>
+
+        <div className="rounded-2xl bg-white/70 backdrop-blur-xl shadow-xl border border-white/60 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Slides (JSON)</h2>
+            <button
+              className="text-sm underline"
+              onClick={() => setJsonText(JSON.stringify(DEFAULT_SLIDES, null, 2))}
+            >
+              Reset to template
+            </button>
+          </div>
+
+          <p className="text-sm opacity-80">
+            Tip: Each slide can set <code>theme</code> (ocean|carbon|sunset|violet|forest) and
+            <code> image</code> (boolean). If <code>image</code> is true, set <code>imageSide</code> to
+            "left" or "right". The app will auto-pick a random image from <code>/src/assets</code>.
+          </p>
+
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            rows={22}
+            className="w-full rounded-xl border bg-white p-3 outline-none focus:ring-2 focus:ring-black/20 font-mono text-sm"
+            spellCheck={false}
+          />
+
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              {jsonError ? (
+                <span className="text-rose-600">JSON error: {jsonError}</span>
+              ) : (
+                <span className="opacity-70">{slides.length} slide(s) ready</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="inline-flex items-center justify-center px-3 py-2 rounded-lg border text-sm"
+                onClick={() => navigator.clipboard.writeText(jsonText)}
+              >
+                Copy JSON
+              </button>
+              <button
+                className="inline-flex items-center justify-center px-3 py-2 rounded-lg border bg-neutral-900 text-white text-sm"
+                onClick={start}
+                disabled={!!jsonError || slides.length === 0}
+              >
+                Present ▶
+              </button>
+            </div>
+          </div>
+
+          <div className="text-xs opacity-70">
+            Put a few images in <code>src/assets/</code> — they are detected automatically.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
